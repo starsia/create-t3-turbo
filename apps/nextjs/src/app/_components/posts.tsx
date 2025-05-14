@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import {
   useMutation,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { boolean } from "zod";
 
 import type { RouterOutputs } from "@acme/api";
 import { CreatePostSchema } from "@acme/db/schema";
@@ -29,7 +31,9 @@ export function CreatePostForm() {
     schema: CreatePostSchema,
     defaultValues: {
       content: "",
+      content2: "",
       title: "",
+      title2: "",
     },
   });
 
@@ -64,7 +68,11 @@ export function CreatePostForm() {
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Input {...field} placeholder="Title" />
+                <Input
+                  {...field}
+                  value={String(field.value || "")}
+                  placeholder="Write the newly learned word here! eg. Bonjour"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -76,13 +84,49 @@ export function CreatePostForm() {
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Input {...field} placeholder="Content" />
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="Now write it in a sentence!"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button>Create</Button>
+        <FormField
+          control={form.control}
+          name="title2"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={String(field.value || "")}
+                  placeholder="Write it in your native language! eg. Hello"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="content2"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={String(field.value || "")}
+                  placeholder="Now in a sentence!"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button>Create Card!</Button>
       </form>
     </Form>
   );
@@ -120,6 +164,8 @@ export function PostCard(props: {
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const [isFlipped, setIsFlipped] = useState<boolean>(false);
+
   const deletePost = useMutation(
     trpc.post.delete.mutationOptions({
       onSuccess: async () => {
@@ -138,17 +184,40 @@ export function PostCard(props: {
   return (
     <div className="flex flex-row rounded-lg bg-muted p-4">
       <div className="flex-grow">
-        <h2 className="text-2xl font-bold text-primary">{props.post.title}</h2>
-        <p className="mt-2 text-sm">{props.post.content}</p>
+        <h2
+          className={cn(
+            "text-2xl font-bold",
+            isFlipped ? "text-violet-400" : "text-primary",
+          )}
+        >
+          {isFlipped ? props.post.title2 : props.post.title}
+        </h2>
+        <p
+          className={cn(
+            "mt-2 text-sm",
+            isFlipped ? "text-violet-400" : "text-primary",
+          )}
+        >
+          {isFlipped ? props.post.content2 : props.post.content}
+        </p>
       </div>
       <div>
-        <Button
-          variant="ghost"
-          className="cursor-pointer text-sm font-bold uppercase text-primary hover:bg-transparent hover:text-white"
-          onClick={() => deletePost.mutate(props.post.id)}
-        >
-          Delete
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="outline"
+            className="cursor-pointer text-sm font-bold uppercase text-primary hover:bg-transparent hover:text-white"
+            onClick={() => setIsFlipped(!isFlipped)}
+          >
+            Flip card
+          </Button>
+          <Button
+            variant="destructive"
+            className="cursor-pointer text-sm font-bold uppercase text-primary hover:bg-transparent hover:text-white"
+            onClick={() => deletePost.mutate(props.post.id)}
+          >
+            Delete
+          </Button>
+        </div>
       </div>
     </div>
   );
